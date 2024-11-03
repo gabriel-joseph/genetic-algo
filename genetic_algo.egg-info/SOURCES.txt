@@ -1,0 +1,9 @@
+README.md
+setup.py
+dynamic_genetic_algo/__init__.py
+dynamic_genetic_algo/genetic_algorithm.py
+genetic_algo.egg-info/PKG-INFO
+genetic_algo.egg-info/SOURCES.txt
+genetic_algo.egg-info/dependency_links.txt
+genetic_algo.egg-info/requires.txt
+genetic_algo.egg-info/top_level.txt
