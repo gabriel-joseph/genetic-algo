@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="dynamic_genetic_algo",
-    version="1.0.1",
+    version="2.0.0",
     description="A genetic algorithm library",
     author="Gabriel Vance",
     long_description=open("README.md").read(),  # Use a README file for detailed info

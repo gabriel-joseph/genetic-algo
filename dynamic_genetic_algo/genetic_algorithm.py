@@ -33,6 +33,8 @@ class GeneticParams:
         average_column: str,
         categorical_columns: Dict[str, List[int]],
         super_elite: int = 20,
+        MAX_COLUMNS: int = 5,
+        MIN_COLUMNS: int = 1,
     ):
         self.population_size = population_size
         self.elite_size = elite_size
@@ -42,6 +44,8 @@ class GeneticParams:
         self.average_column = average_column
         self.categorical_columns = categorical_columns
         self.super_elite = super_elite
+        self.MAX_COLUMNS = MAX_COLUMNS
+        self.MIN_COLUMNS = MIN_COLUMNS
 
 
 class GeneticAlgorithm:
@@ -54,25 +58,36 @@ class GeneticAlgorithm:
         columns_to_drop (List[str]): List of columns to drop from the training data.
     """
 
-    MAX_COLUMNS = 5
-    MIN_COLUMNS = 1
-
     def __init__(
         self,
         training_data: pd.DataFrame,
         target: str,
         columns_to_drop: List[str],
         genetic_params: GeneticParams,
+        white_list_columns: List[str],
     ):
         self.training_data = training_data
         self.target = target
         self.columns_to_drop = columns_to_drop
         self.genetic_params = genetic_params
         self.cat_criteria = list(self.genetic_params.categorical_columns.keys())
-        self.criteria = self.generate_criteria()
+        self.criteria = None  # Initialize as None
+        self.white_list_columns = white_list_columns
         self.MIN_ROWS = int(
             len(self.training_data) * self.genetic_params.min_size_ratio
         )
+
+        # Apply the white list
+        self.white_list_dataset()
+
+        # Generate criteria after the dataset is cleaned
+        self.criteria = self.generate_criteria()
+
+    def white_list_dataset(self):
+        if (
+            len(self.white_list_columns) > 0
+        ):  # Fixed to use `len()` instead of `.length`
+            self.training_data = self.training_data[self.white_list_columns]
 
     def clean_training_data(self) -> pd.DataFrame:
         """
@@ -135,7 +150,9 @@ class GeneticAlgorithm:
         ]
         all_columns = numeric_columns + categorical_columns
 
-        num_columns = random.randint(self.MIN_COLUMNS, self.MAX_COLUMNS)
+        num_columns = random.randint(
+            self.genetic_params.MIN_COLUMNS, self.genetic_params.MAX_COLUMNS
+        )
         selected_columns = random.sample(
             all_columns, min(num_columns, len(all_columns))
         )
