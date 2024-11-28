@@ -32,9 +32,11 @@ class GeneticParams:
         min_size_ratio: float,
         average_column: str,
         categorical_columns: Dict[str, List[int]],
+        multi_target: List[str] = [],
         super_elite: int = 20,
         MAX_COLUMNS: int = 5,
         MIN_COLUMNS: int = 1,
+        min_rows_override=0,
     ):
         self.population_size = population_size
         self.elite_size = elite_size
@@ -46,6 +48,8 @@ class GeneticParams:
         self.super_elite = super_elite
         self.MAX_COLUMNS = MAX_COLUMNS
         self.MIN_COLUMNS = MIN_COLUMNS
+        self.multi_target = multi_target
+        self.min_rows_override = min_rows_override
 
 
 class GeneticAlgorithm:
@@ -215,10 +219,30 @@ class GeneticAlgorithm:
             return 0, 0, 0  # Low fitness for too few rows
 
         row_count = len(filtered_df)
-        fitness = filtered_df[self.target].mean().round(2)
+        fitness = filtered_df[self.target].mean().round(2)  # binary or number
+        # if len
         avg_target = filtered_df[self.genetic_params.average_column].mean().round(2)
 
         return fitness, avg_target, row_count
+
+        # come back to this :()
+        # def evaluate_fitness_based_on_multi_target(self, query_conditions):
+        #     """Apply query and calculate fitness."""
+        #     filtered_df = self.apply_query(query_conditions, self.training_data)
+
+        #     if len(filtered_df) < self.MIN_ROWS:
+        #         return 0, 0, 0  # Low fitness for too few rows
+
+        #     row_count = len(filtered_df)
+        #     fitness = 0
+        #     avg_target = 0
+
+        #     for target in self.genetic_params.multi_target:
+        #         fitness = filtered_df[target].mean().round(2)  # binary or number
+        #         # if len
+        #         avg_target = filtered_df[target].mean().round(2)
+
+        # return fitness, avg_target, row_count
 
     def generate_query_string(self, query_conditions):
         query_parts = []
@@ -335,11 +359,20 @@ class GeneticAlgorithm:
     def run(self):
         population = None  # Initialize population as None
 
+        min_rows = self.MIN_ROWS
+        if self.genetic_params.min_rows_override != 0:
+            min_rows = self.genetic_params.min_rows_override
+
         for generation in range(self.genetic_params.generations):
             # At the beginning of each generation, select 15 random features
-            allowed_features = random.sample(
-                list(self.criteria.keys()) + self.cat_criteria, 15
-            )
+            random_samples = 15
+            combined_list = list(self.criteria.keys()) + self.cat_criteria
+
+            # Ensure the sample size does not exceed the length of the combined list
+            if len(combined_list) < 15:
+                random_samples = len(combined_list)
+
+            allowed_features = random.sample(combined_list, random_samples)
 
             # For the first generation, initialize the population
             if population is None:
@@ -356,7 +389,7 @@ class GeneticAlgorithm:
                         query,
                         self.training_data,
                         self.target,
-                        self.MIN_ROWS,
+                        min_rows,
                         self.genetic_params.average_column,
                     ): query
                     for query in population
